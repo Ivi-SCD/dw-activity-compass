@@ -15,7 +15,7 @@ nesses notebooks.
 
 > Obs: **CASO VA EXECUTAR OS NOTEBOOKS, É IMPORTANTE QUE OS NOTEBOOKS SEJAM EXECUTADOS NESTA ORDEM!!!!!**
 
-Otherwise, caso vá executar diretamente o script python, os notebooks ficam apenas de exemplo para você entender como e porque eu tomei determinadas decisões de alterações no dataset: [processing_trusted]()
+Otherwise, caso vá executar diretamente o script python, os notebooks ficam apenas de exemplo para você entender como e porque eu tomei determinadas decisões de alterações no dataset: [processing_trusted.py](../etl_scripts/processing_trusted.py)
 
 - **[customer_to_trusted.ipynb](./customer_to_trusted.ipynb)**: Processamento e carregamento do dataset Customer.
 - **[payments_to_trusted.ipynb](./payments_to_trusted.ipynb)**: Processamento e carregamento do dataset Payment.
