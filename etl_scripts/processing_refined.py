@@ -21,6 +21,7 @@ ds_orders['order_approved_at'] = pd.to_datetime(ds_orders['order_approved_at'])
 ds_orders['order_delivered_customer_date'] = pd.to_datetime(ds_orders['order_delivered_customer_date'])
 ds_orders['order_delivered_carrier_date'] = pd.to_datetime(ds_orders['order_delivered_carrier_date'])
 ds_orders['order_estimated_delivery_date'] = pd.to_datetime(ds_orders['order_estimated_delivery_date'])
+ds_items['shipping_limit_date'] = pd.to_datetime(ds_items['shipping_limit_date'])
 
 mask = (ds_orders['order_approved_at'].isnull()) & (ds_orders['order_status'] == 'delivered')
 ds_orders.loc[mask, 'order_approved_at'] = ds_orders.loc[mask, 'order_purchase_timestamp']
@@ -53,6 +54,7 @@ dim_tempo_instante = pd.DataFrame({
         ds_orders['order_estimated_delivery_date'],
         ds_reviews['review_answer_timestamp'],
         ds_reviews['review_creation_date'],
+        ds_items['shipping_limit_date']
     ]).unique()
 })
 
@@ -69,6 +71,7 @@ dim_tempo_data = pd.DataFrame({
         ds_orders['order_estimated_delivery_date'].dt.date,
         ds_reviews['review_creation_date'].dt.date,
         ds_reviews['review_answer_timestamp'].dt.date,
+        ds_items['shipping_limit_date'].dt.date
     ]).unique()
 })
 
@@ -91,6 +94,7 @@ dim_tempo_data.to_csv(REFINED_PATH + 'dim_tempo_data.csv', index=False)
 ## Dimensão Cliente
 
 dim_cliente = ds_customers.copy()
+dim_cliente.drop_duplicates(subset=['customer_id'], keep='first', inplace=True)
 dim_cliente.rename(columns={'customer_id': 'cliente_id', 'customer_zip_code_prefix':'cliente_codigo_postal', 
                                                     'customer_city':'cliente_cidade', 'customer_state':'cliente_estado'}, inplace=True)
 dim_cliente.to_csv(REFINED_PATH + 'dim_cliente.csv', index=False)
@@ -269,7 +273,7 @@ dim_produto = ds_products.rename(columns={'product_id':'produto_id',
                                           'product_width_cm':'produto_comprimento_cm'
                                           }).copy()
 
-dim_produto.drop(columns=['produto_tamanho_nome', 'produto_tamanho_descricao'])
+dim_produto.drop(columns=['produto_tamanho_nome', 'produto_tamanho_descricao'], inplace=True)
 dim_produto.to_csv(REFINED_PATH + 'dim_produto.csv', index=False)
 
 ## Tabela Fato
@@ -317,7 +321,8 @@ fato_pedido = pd.merge(fato_pedido, ds_payments, on='order_id')
 fato_pedido = pd.merge(fato_pedido, ds_items, on='order_id')
 fato_pedido = pd.merge(fato_pedido, ds_reviews, on='order_id')
 fato_pedido.drop(columns=['avaliacao_titulo_comentario','order_id','customer_id','avaliacao_mensagem_comentario', 'pedido_status'], inplace=True)
-fato_pedido.rename(columns={'product_id': 'produto_id'}, inplace=True)
+fato_pedido.rename(columns={'product_id': 'produto_id', 'preco':'preco_unitario', 'qtd':'quantidade'}, inplace=True)
+fato_pedido['fato_pedido_id'] = range(1, len(fato_pedido) + 1)
 fato_pedido = fato_pedido.convert_dtypes()
 
 fato_pedido.to_csv(REFINED_PATH + 'fato_pedido.csv', index=False)

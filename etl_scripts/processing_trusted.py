@@ -24,7 +24,7 @@ customer_id_map = ds_customers.set_index('customer_id')['customer_unique_id']
 ds_orders['customer_id'] = ds_orders['customer_id'].map(customer_id_map)
 ds_customers.drop(columns=['customer_id'], inplace=True)
 ds_customers.rename(columns={'customer_unique_id':'customer_id'}, inplace=True)
-ds_customers.drop_duplicates(subset=['customer_id'], keep='first')
+ds_customers.drop_duplicates(subset=['customer_id'], keep='first', inplace=True)
 ds_customers = ds_customers.convert_dtypes()
 ds_orders = ds_orders.convert_dtypes()
 
@@ -42,7 +42,7 @@ ds_orders = ds_orders.convert_dtypes()
 
 ds_payments.to_csv(PATH_TRUSTED + 'payments_trusted.csv', index=False)
 
-### 
+### Reviews
 
 ds_reviews.fillna({'review_comment_title':'Sem Titulo', 'review_comment_message':'Sem Comentários'}, inplace=True)
 ds_reviews.drop_duplicates(subset=['order_id'], inplace=True)
@@ -83,4 +83,18 @@ ds_products = ds_products.convert_dtypes()
 ds_itens = ds_itens.convert_dtypes()
 
 ds_products.to_csv(PATH_TRUSTED + 'products_trusted.csv', index=False)
-ds_itens.to_csv(PATH_TRUSTED + 'itens_trusted.csv', index=False)
+
+
+## Itens
+
+ds_itens.drop(columns=["seller_id"], inplace=True)
+ds_itens.drop(columns=['order_item_id'], inplace=True)
+ds_itens.dropna(subset=['product_id'], inplace=True)
+ds_itens['quantidade'] = ds_itens.groupby(['order_id', 'product_id'])['order_id'].transform('count')
+ds_itens.drop_duplicates(subset=['order_id', 'product_id'], inplace=True)
+
+order_id_map = ds_orders.set_index('order_id')['order_id_int']
+ds_itens['order_id'] = ds_itens['order_id'].map(order_id_map)
+
+ds_itens.to_csv(PATH_TRUSTED + 'items_trusted.csv', index=False)
+ds_orders.to_csv(PATH_TRUSTED + 'orders_trusted.csv', index=False)

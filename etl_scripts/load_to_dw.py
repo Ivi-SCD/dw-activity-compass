@@ -9,14 +9,14 @@ DB = os.getenv("DB")
 USER = os.getenv("USER")
 PASSWORD = os.getenv("PASS")
 
-df_cliente = pd.read_csv('./output/pd/refined/dim_cliente.csv')
-df_avaliacao = pd.read_csv('./output/pd/refined/dim_avaliacao.csv')
-df_pagamento = pd.read_csv('./output/pd/refined/dim_pagamento.csv')
-df_pedido = pd.read_csv('./output/pd/refined/dim_pedido.csv')
-df_produto = pd.read_csv('./output/pd/refined/dim_produto.csv')
-df_tempo_data = pd.read_csv('./output/pd/refined/dim_tempo_data.csv')
-df_tempo_instante = pd.read_csv('./output/pd/refined/dim_tempo_instante.csv')
-df_fato_pedidos = pd.read_csv('./output/pd/refined/fato_pedido.csv')
+df_cliente = pd.read_csv('../output/pd/refined/dim_cliente.csv')
+df_avaliacao = pd.read_csv('../output/pd/refined/dim_avaliacao.csv')
+df_pagamento = pd.read_csv('../output/pd/refined/dim_pagamento.csv')
+df_pedido = pd.read_csv('../output/pd/refined/dim_pedido.csv')
+df_produto = pd.read_csv('../output/pd/refined/dim_produto.csv')
+df_tempo_data = pd.read_csv('../output/pd/refined/dim_tempo_data.csv')
+df_tempo_instante = pd.read_csv('../output/pd/refined/dim_tempo_instante.csv')
+df_fato_pedidos = pd.read_csv('../output/pd/refined/fato_pedido.csv')
 
 
 def criar_tabela(nome_tabela, colunas):
@@ -98,6 +98,7 @@ if __name__ == '__main__':
     }
 
     campos_fato_pedido = {
+    'fato_pedido_id': 'INTEGER PRIMARY KEY',
     'pedido_id': 'INTEGER',
     'cliente_id': 'INTEGER',
     'pagamento_id': 'INTEGER',
@@ -121,7 +122,8 @@ if __name__ == '__main__':
     'pagamento_valor': 'DECIMAL',
     'pagamento_formas_distintas': 'INTEGER',
     'pagamento_parcelamentos': 'INTEGER',
-    'preco': 'DECIMAL',
+    'preco_unitario': 'DECIMAL',
+    'quantidade': 'INTEGER',
     'frete_valor': 'DECIMAL',
     'FOREIGN KEY (pedido_id)': ' REFERENCES dim_pedido(pedido_id)',
     'FOREIGN KEY (cliente_id)': ' REFERENCES dim_cliente(cliente_id)',
