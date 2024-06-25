@@ -114,76 +114,6 @@ ds_payments.rename(columns={'payment_sequential':'pagamento_formas_distintas',
 
 dim_pagamento.to_csv(REFINED_PATH + 'dim_pagamento.csv', index=False)
 
-## Dimensão Avaliação
-
-ds_reviews = ds_reviews.convert_dtypes()
-ds_reviews['review_answer_timestamp'] = pd.to_datetime(ds_reviews['review_answer_timestamp'])
-ds_reviews['review_creation_date'] = pd.to_datetime(ds_reviews['review_creation_date'])
-
-for field in ['review_creation_date', 'review_answer_timestamp']:
-    ds_reviews[field + '_dia'] = ds_reviews[field].dt.day
-    ds_reviews[field + '_mes'] = ds_reviews[field].dt.month
-    ds_reviews[field + '_ano'] = ds_reviews[field].dt.year
-    ds_reviews[field + '_hora'] = ds_reviews[field].dt.hour
-    ds_reviews[field + '_minuto'] = ds_reviews[field].dt.minute
-    ds_reviews[field + '_segundo'] = ds_reviews[field].dt.second
-
-def obter_ids(dataframe, campo_base):
-
-    # Data
-    dataframe = pd.merge(ds_reviews, dim_tempo_data, how='left',
-                         left_on=[campo_base + '_ano', campo_base + '_mes', campo_base + '_dia'],
-                         right_on=['ano', 'mes', 'dia'])
-    dataframe = dataframe.rename(columns={'tempo_data_id': campo_base + '_data_id'})
-    dataframe.drop(columns=['ano', 'mes', 'dia'], inplace=True)
-
-    # Instante
-    dataframe = pd.merge(dataframe, dim_tempo_instante, how='left', 
-                         left_on=[campo_base + '_hora', campo_base + '_minuto', campo_base + '_segundo'],
-                         right_on=['hora', 'minuto', 'segundo'])
-    dataframe = dataframe.rename(columns={'tempo_instante_id': campo_base + '_instante_id'})
-    dataframe.drop(columns=['hora', 'minuto', 'segundo'], inplace=True)
-
-    return dataframe
-
-for field in ['review_creation_date', 'review_answer_timestamp']:
-    ds_reviews = obter_ids(ds_reviews, field)
-
-colunas_aux = []
-for field in ['review_creation_date', 'review_answer_timestamp']:
-    colunas_aux.extend([field + '_ano', field + '_mes', field + '_dia', field + '_hora', field + '_minuto', field + '_segundo'])
-
-ds_reviews.drop(columns=colunas_aux, inplace=True)
-
-ds_reviews.drop(columns=['review_creation_date', 'review_answer_timestamp'], inplace=True)
-
-ds_review = ds_reviews.rename(columns={
-    'order_id': 'pedido_id',
-    'review_score':'avaliacao_pontuacao',
-    'review_id': 'avaliacao_id',
-    'review_comment_title': 'avaliacao_titulo_comentario',
-    'review_comment_message': 'avaliacao_mensagem_comentario',
-    'review_creation_date_data_id': 'avaliacao_data_criacao_id',
-    'review_creation_date_instante_id': 'avaliacao_instante_criacao_id',
-    'review_answer_timestamp_data_id': 'avaliacao_data_resposta_id',
-    'review_answer_timestamp_instante_id': 'avaliacao_instante_resposta_id'
-})
-
-dim_avaliacao = ds_review.copy()
-
-dim_avaliacao.drop(columns=['pedido_id', 'avaliacao_pontuacao', 
-                   'avaliacao_data_criacao_id', 'avaliacao_instante_criacao_id',
-                  'avaliacao_data_resposta_id', 'avaliacao_instante_resposta_id'], inplace=True)
-dim_avaliacao.drop_duplicates(subset=['avaliacao_titulo_comentario', 'avaliacao_mensagem_comentario'], inplace=True)
-dim_avaliacao['avaliacao_id'] = range(1, len(dim_avaliacao) + 1)
-ds_reviews = pd.merge(ds_reviews, dim_avaliacao, left_on=['review_comment_title', 'review_comment_message'], right_on=['avaliacao_titulo_comentario', 'avaliacao_mensagem_comentario'])
-ds_reviews.drop(columns=['review_comment_title', 'review_comment_message', 'review_id', 'review_answer_timestamp_data_id'], inplace=True)
-ds_reviews.rename(columns={'review_score': 'avaliacao_pontuacao', 'review_creation_date_data_id':'avaliacao_criacao_data_id'
-                          ,'review_creation_date_instante_id':'avaliacao_criacao_instante_id',
-                          'review_answer_timestamp_instante_id':'avaliacao_resposta_instante_id'}, inplace=True)
-
-dim_avaliacao.to_csv(REFINED_PATH + 'dim_avaliacao.csv', index=False)
-
 ## Dimensão Pedido
 
 dim_pedido = ds_orders[['order_id', 'order_status']].copy()
@@ -273,7 +203,7 @@ dim_produto = ds_products.rename(columns={'product_id':'produto_id',
                                           'product_width_cm':'produto_comprimento_cm'
                                           }).copy()
 
-dim_produto.drop(columns=['produto_tamanho_nome', 'produto_tamanho_descricao'], inplace=True)
+dim_produto.drop(columns=['produto_tamanho_nome', 'produto_tamanho_descricao', 'produto_qtd_fotos', 'produto_peso_g', 'produto_largura_cm', 'produto_altura_cm', 'produto_comprimento_cm'], inplace=True)
 dim_produto.to_csv(REFINED_PATH + 'dim_produto.csv', index=False)
 
 ## Tabela Fato
@@ -316,11 +246,30 @@ ds_items.rename(columns={'tempo_data_id': 'envio_limite_data_id',
                         'price':'preco',
                         'freight_value':'frete_valor'}, inplace=True)
 
+
+
 fato_pedido = pd.merge(ds_orders, ds_customers['customer_id'], right_on='customer_id', left_on='cliente_id')
 fato_pedido = pd.merge(fato_pedido, ds_payments, on='order_id')
 fato_pedido = pd.merge(fato_pedido, ds_items, on='order_id')
 fato_pedido = pd.merge(fato_pedido, ds_reviews, on='order_id')
-fato_pedido.drop(columns=['avaliacao_titulo_comentario','order_id','customer_id','avaliacao_mensagem_comentario', 'pedido_status'], inplace=True)
+fato_pedido.drop(columns=[
+    'review_score',
+    'review_comment_title',
+    'review_comment_message',
+    'review_creation_date',
+    'review_answer_timestamp',
+    'review_id',
+    'order_id',
+    'customer_id',
+    'pedido_status',
+    'pedido_entregue_operador_data_id',
+    'pedido_entregue_operador_instante_id',
+    'pedido_entregue_cliente_data_id',
+    'pedido_entregue_cliente_instante_id',
+    'pedido_entrega_estimada_data_id',
+    'envio_limite_data_id',
+    'envio_limite_instante_id'], inplace=True)
+
 fato_pedido.rename(columns={'product_id': 'produto_id', 'preco':'preco_unitario', 'qtd':'quantidade'}, inplace=True)
 fato_pedido['fato_pedido_id'] = range(1, len(fato_pedido) + 1)
 fato_pedido = fato_pedido.convert_dtypes()
